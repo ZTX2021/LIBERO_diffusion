@@ -17,4 +17,6 @@ logs/
 libero.egg-info/
 .vscode/
 
+#by ztx
 *.zip
+*.png
