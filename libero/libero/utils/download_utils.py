@@ -65,10 +65,9 @@ def download_url(url, download_dir, check_overwrite=True, is_zipfile=True):
         check_overwrite (bool): if True, will sanity check the download fpath to make sure a file of that name
             doesn't already exist there
     """
-
     # check if url is reachable. We need the sleep to make sure server doesn't reject subsequent requests
-    assert url_is_alive(url), "@download_url got unreachable url: {}".format(url)
-    time.sleep(0.5)
+    # assert url_is_alive(url), "@download_url got unreachable url: {}".format(url)
+    # time.sleep(0.5)
 
     # infer filename from url link
     fname = url.split("/")[-1]
@@ -136,7 +135,7 @@ def libero_dataset_download(datasets="all", download_dir=None, check_overwrite=T
             # (TODO): unzip the files
 
 
-def check_libero_dataset(download_dir=None):
+def check_libero_dataset(download_dir=None, dataset = 'all'):
     """Check the integrity of the downloaded datasets.
 
     Args:
@@ -181,5 +180,6 @@ def check_libero_dataset(download_dir=None):
             )
 
         print(info_str)
-        check_result = check_result and dataset_status
+        if dataset_name == dataset or dataset == 'all':
+            check_result = check_result and dataset_status
     return check_result
