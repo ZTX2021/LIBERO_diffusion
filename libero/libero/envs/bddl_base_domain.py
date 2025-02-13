@@ -276,6 +276,7 @@ class BDDLBaseDomain(SingleArmEnv):
         mujoco_arena.set_camera(
             camera_name="canonical_agentview",
             pos=[0.5386131746834771, 0.0, 1.4903500240372423],
+            # pos=[0.5386131746834771, 0.0, 2],
             quat=[
                 0.6380177736282349,
                 0.3048497438430786,
@@ -286,6 +287,7 @@ class BDDLBaseDomain(SingleArmEnv):
         mujoco_arena.set_camera(
             camera_name="agentview",
             pos=[0.5886131746834771, 0.0, 1.4903500240372423],
+            # pos=[0.5886131746834771, 0.0, 2],
             quat=[
                 0.6380177736282349,
                 0.3048497438430786,

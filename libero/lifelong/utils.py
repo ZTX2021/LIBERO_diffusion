@@ -106,7 +106,7 @@ def compute_flops(algo, dataset, cfg):
     return GFLOPs, MParams
 
 
-def create_experiment_dir(cfg):
+def create_experiment_dir(cfg, partial_trained):
     prefix = "experiments"
     if cfg.pretrain_model_path != "":
         prefix += "_finetune"
@@ -131,21 +131,25 @@ def create_experiment_dir(cfg):
 
     # look for the most recent run
     experiment_id = 0
-    for path in Path(experiment_dir).glob("run_*"):
-        if not path.is_dir():
-            continue
-        try:
-            folder_id = int(str(path).split("run_")[-1])
-            if folder_id > experiment_id:
-                experiment_id = folder_id
-        except BaseException:
-            pass
-    experiment_id += 1
+    if partial_trained == -1:
+        for path in Path(experiment_dir).glob("run_*"):
+            if not path.is_dir():
+                continue
+            try:
+                folder_id = int(str(path).split("run_")[-1])
+                if folder_id > experiment_id:
+                    experiment_id = folder_id
+            except BaseException:
+                pass
+        experiment_id += 1
+    else:
+        experiment_id = partial_trained
 
     experiment_dir += f"/run_{experiment_id:03d}"
     cfg.experiment_dir = experiment_dir
     cfg.experiment_name = "_".join(cfg.experiment_dir.split("/")[2:])
-    os.makedirs(cfg.experiment_dir, exist_ok=True)
+    if partial_trained == -1:
+        os.makedirs(cfg.experiment_dir, exist_ok=True)
     return True
 
 

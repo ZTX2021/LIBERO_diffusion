@@ -4,13 +4,14 @@ import numpy as np
 
 
 class VideoWriter:
-    def __init__(self, video_path, save_video=False, fps=30, single_video=True):
+    def __init__(self, video_path, name="video.mp4", save_video=False, fps=30, single_video=True):
         self.video_path = video_path
         self.save_video = save_video
         self.fps = fps
         self.image_buffer = {}
         self.last_images = {}
         self.single_video = single_video
+        self.name = name
 
     def __enter__(self):
         return self
@@ -61,7 +62,7 @@ class VideoWriter:
         if self.save_video:
             os.makedirs(self.video_path, exist_ok=True)
             if self.single_video:
-                video_name = os.path.join(self.video_path, f"video.mp4")
+                video_name = os.path.join(self.video_path, self.name)
                 video_writer = imageio.get_writer(video_name, fps=self.fps)
                 for idx in self.image_buffer.keys():
                     for im in self.image_buffer[idx]:

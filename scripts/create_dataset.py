@@ -17,9 +17,15 @@ from robosuite.utils import camera_utils
 from libero.libero.envs import *
 from libero.libero import get_libero_path
 
+def print_green(text):
+    """输出绿色文本"""
+    GREEN = '\033[32m'  # 绿色
+    RESET = '\033[0m'   # 重置颜色
+    print(f"\n{GREEN}{text}{RESET}\n")
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--demo-file", default="demo.hdf5")
+    parser.add_argument("--demo-file", default="/home/jiangtao/tianxing/LIBERO-master/libero/datasets/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5")
 
     parser.add_argument(
         "--use-actions",
@@ -29,7 +35,7 @@ def main():
     parser.add_argument(
         "--dataset-path",
         type=str,
-        default="datasets/",
+        default="outputs/datasets/new_dataset.hdf5",
     )
 
     parser.add_argument(
@@ -49,10 +55,13 @@ def main():
 
     hdf5_path = args.demo_file
     f = h5py.File(hdf5_path, "r")
-    env_name = f["data"].attrs["env"]
+    env_name = f["data"].attrs["env_name"]
 
-    env_args = f["data"].attrs["env_info"]
-    env_kwargs = json.loads(f["data"].attrs["env_info"])
+    env_args = f["data"].attrs["env_args"]
+    env_kwargs = json.loads(f["data"].attrs["env_args"])["env_kwargs"]
+
+
+    
 
     problem_info = json.loads(f["data"].attrs["problem_info"])
     problem_info["domain_name"]
@@ -65,14 +74,18 @@ def main():
     bddl_file_name = f["data"].attrs["bddl_file_name"]
 
     bddl_file_dir = os.path.dirname(bddl_file_name)
-    replace_bddl_prefix = "/".join(bddl_file_dir.split("bddl_files/")[:-1] + "bddl_files")
+    replace_bddl_prefix = "/".join(bddl_file_dir.split("bddl_files/")[:-1] + ["bddl_files"])
 
     hdf5_path = os.path.join(get_libero_path("datasets"), bddl_file_dir.split("bddl_files/")[-1].replace(".bddl", "_demo.hdf5"))
 
     output_parent_dir = Path(hdf5_path).parent
     output_parent_dir.mkdir(parents=True, exist_ok=True)
 
-    h5py_f = h5py.File(hdf5_path, "w")
+    directory = os.path.dirname(args.dataset_path)
+    os.makedirs(directory, exist_ok=True)
+
+    
+    h5py_f = h5py.File(args.dataset_path, "w")
 
     grp = h5py_f.create_group("data")
 
@@ -101,11 +114,16 @@ def main():
 
     grp.attrs["bddl_file_name"] = bddl_file_name
     grp.attrs["bddl_file_content"] = open(bddl_file_name, "r").read()
-    print(grp.attrs["bddl_file_content"])
 
     env = TASK_MAPPING[problem_name](
         **env_kwargs,
     )
+
+    print_green("Opened")
+
+    print_green(type(env))
+
+    print_green(type(env.sim))
 
     env_args = {
         "type": 1,
@@ -116,14 +134,16 @@ def main():
     }
 
     grp.attrs["env_args"] = json.dumps(env_args)
-    print(grp.attrs["env_args"])
     total_len = 0
     demos = demos
+
+    print_green(demos)
 
     cap_index = 5
 
     for (i, ep) in enumerate(demos):
-        print("Playing back random episode... (press ESC to quit)")
+        # print("Playing back random episode... (press ESC to quit)")
+        print_green(f"Playing on demo {ep}")
 
         # # select an episode randomly
         # read the model xml, using the metadata stored in the attribute for this episode
@@ -148,6 +168,10 @@ def main():
         num_actions = actions.shape[0]
 
         init_idx = 0
+        model_xml = model_xml.replace("/Users/yifengz/workspace/libero-dev/chiliocosm", "/home/jiangtao/tianxing/LIBERO-master/libero/libero")
+
+
+
         env.reset_from_xml_string(model_xml)
         env.sim.reset()
         env.sim.set_state_from_flattened(states[init_idx])
@@ -267,6 +291,8 @@ def main():
         ep_data_grp.attrs["init_state"] = states[init_idx]
         total_len += len(agentview_images)
 
+        break
+
     grp.attrs["num_demos"] = len(demos)
     grp.attrs["total"] = total_len
     env.close()
@@ -274,7 +300,7 @@ def main():
     h5py_f.close()
     f.close()
 
-    print("The created dataset is saved in the following path: ")
+    print_green("The created dataset is saved in the following path: ")
     print(hdf5_path)
 
 

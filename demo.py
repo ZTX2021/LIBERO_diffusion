@@ -61,7 +61,8 @@ def visual_insitial():
     for eval_index in range(len(init_states)):
         env.set_init_state(init_states[eval_index])
         
-        t = 5 if eval_index % 2 == 0 else 0
+        # t = 5 if eval_index % 2 == 0 else 0
+        t = 1
 
         for _ in range(t):
             obs, _, _, _ = env.step([1.] * 7)
@@ -72,7 +73,7 @@ def visual_insitial():
     grid_image = make_grid(images, nrow=10, padding=2, pad_value=0)
     # display(Image.fromarray(grid_image.numpy()[::-1]))
     image = Image.fromarray(grid_image.numpy()[::-1])
-    image.save("generated_image.png")
+    image.save("outputs/initial_image_1.png")
     env.close()
 
 
@@ -96,20 +97,20 @@ def visual():
     import imageio
 
     # Check if the demo files exist
-    demo_files = [os.path.join(datasets_default_path, benchmark_instance.get_task_demonstration(i)) for i in range(num_tasks)]
-    for demo_file in demo_files:
-        if not os.path.exists(demo_file):
-            print(colored(f"[error] demo file {demo_file} cannot be found. Check your paths", "red"))
+    # demo_files = [os.path.join(datasets_default_path, benchmark_instance.get_task_demonstration(i)) for i in range(num_tasks)]
+    # for demo_file in demo_files:
+    #     if not os.path.exists(demo_file):
+    #         print(colored(f"[error] demo file {demo_file} cannot be found. Check your paths", "red"))
 
-    example_demo_file = demo_files[0]
+    example_demo_file = 'outputs/datasets/new_dataset.hdf5'
     # Print the dataset info. We have a standalone script for doing the same thing available at `scripts/get_dataset_info.py`
-    get_dataset_info(example_demo_file)
+    # get_dataset_info(example_demo_file)
 
     with h5py.File(example_demo_file, "r") as f:
-        images = f["data/demo_0/obs/eye_in_hand_rgb"][()]
+        images = f["data/demo_0/obs/agentview_rgb"][()]
 
     # Specify the output file path
-    output_video_path = os.path.join("outputs", "example.mp4")
+    output_video_path = os.path.join("outputs", "outputs_1.mp4")
 
     # Ensure the output directory exists
     os.makedirs(os.path.dirname(output_video_path), exist_ok=True)
@@ -129,6 +130,69 @@ def visual():
     #         video.playbackRate = 2.0; // Increase the playback speed to 2x
     #         </script>    
     # """)
+    
+
+def print_hdf5_structure(group, indent=0):
+    # 递归打印 HDF5 文件或组的结构，包括每一层的 keys、attributes 和元数据。
+    
+    # :param group: 当前处理的 h5py 文件或组
+    # :param indent: 用于格式化输出的缩进，默认值为0
+
+    # 遍历当前组的所有 keys
+    import h5py
+    for key, obj in group.items():
+        print(" " * indent + f"Key: {key}, Type: {type(obj)}")
+        
+        # 打印对象的 attributes (元数据)
+        if isinstance(obj, h5py.Group) or isinstance(obj, h5py.Dataset):
+            if obj.attrs:
+                print(" " * (indent + 2) + "Attributes:")
+                for attr_key, attr_value in obj.attrs.items():
+                    print(" " * (indent + 4) + f"{attr_key}")
+        
+        # 如果是 Group 类型，递归调用该函数以处理下一层
+    
+    for key, obj in group.items():
+        if isinstance(obj, h5py.Group):
+            print(" " * (indent + 2) + "Entering Group " + key + "...")
+            print_hdf5_structure(obj, indent + 4)  # 递归进入下一层 Group
+            break
+
+def read_data(h5_file_path):
+    import h5py
+    # 打开 HDF5 文件
+    with h5py.File(h5_file_path, 'r') as file:
+        # print_hdf5_structure(file)
+        with open("./model_file.txt", "w", encoding="utf-8") as output:
+            output.write(file["data"]["demo_0"].attrs["model_file"])
+        pass
+
+
+
+def get_auc():
+# def get_auc(experiment_dir, bench, algo, policy):
+    import numpy as np
+    import torch
+    # N_EP = cfg.train.n_epochs // cfg.eval.eval_every + 1
+    N_EP = 11
+    # fwds = np.zeros((N_TASKS, N_EP, N_SEEDS))
+
+    # for task in range(N_TASKS):
+    counter = 0
+    # for k, seed in enumerate(seeds):
+    name = '/home/jiangtao/tianxing/LIBERO-master/experiments/LIBERO_SPATIAL/ER/BCRNNPolicy_seed42/run_039/task0_auc.log'
+    # try:
+    succ = torch.load(name)# (n_epochs)
+    # idx = succ.argmax()
+    # succ[idx:] = succ[idx]
+    # fwds[task, :, k] = succ
+    print(succ)
+    # except:
+    #     print("Some errors when loading results")
+        # continue
+    # return fwds
+
+
 
 if __name__ == '__main__':
     from libero.libero import benchmark, get_libero_path, set_libero_default_path
@@ -165,12 +229,293 @@ if __name__ == '__main__':
 
     # check_integrity()
     # visual_insitial()
-    download_datasets()
+    # download_datasets()
     visual()
+    # read_data('./libero/datasets/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5')
+    # get_auc()
 
 
 
 
 
 
-
+# 附：数据集结构
+'''
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+Key: data, Type: <class 'h5py._hl.group.Group'>
+  Attributes:
+    bddl_file_name
+    env_args
+    env_name
+    macros_image_convention
+    num_demos
+    problem_info
+    tag
+    total
+  Entering Group data...
+    Key: demo_0, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_1, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_10, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_11, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_12, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_13, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_14, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_15, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_16, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_17, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_18, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_19, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_2, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_20, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_21, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_22, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_23, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_24, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_25, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_26, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_27, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_28, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_29, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_3, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_30, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_31, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_32, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_33, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_34, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_35, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_36, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_37, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_38, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_39, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_4, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_40, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_41, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_42, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_43, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_44, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_45, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_46, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_47, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_48, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_49, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_5, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_6, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_7, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_8, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+    Key: demo_9, Type: <class 'h5py._hl.group.Group'>
+      Attributes:
+        init_state
+        model_file
+        num_samples
+      Entering Group demo_0...
+        Key: actions, Type: <class 'h5py._hl.dataset.Dataset'>
+        Key: dones, Type: <class 'h5py._hl.dataset.Dataset'>
+        Key: obs, Type: <class 'h5py._hl.group.Group'>
+        Key: rewards, Type: <class 'h5py._hl.dataset.Dataset'>
+        Key: robot_states, Type: <class 'h5py._hl.dataset.Dataset'>
+        Key: states, Type: <class 'h5py._hl.dataset.Dataset'>
+          Entering Group obs...
+            Key: agentview_rgb, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: ee_ori, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: ee_pos, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: ee_states, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: eye_in_hand_rgb, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: gripper_states, Type: <class 'h5py._hl.dataset.Dataset'>
+            Key: joint_states, Type: <class 'h5py._hl.dataset.Dataset'>
+'''

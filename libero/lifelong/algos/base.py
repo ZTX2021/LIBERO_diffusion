@@ -140,10 +140,27 @@ class Sequential(nn.Module, metaclass=AlgoMeta):
         train_dataloader = DataLoader(
             dataset,
             batch_size=self.cfg.train.batch_size,
-            num_workers=self.cfg.train.num_workers,
+            # num_workers=self.cfg.train.num_workers,
             sampler=RandomSampler(dataset),
-            persistent_workers=True,
+            # persistent_workers=True,
         )
+        
+        # print('Check dataset')
+
+        # print(dataset.sequence_dataset)
+
+
+        # import h5py
+
+        # if isinstance(dataset, h5py.File):
+        #     print("dataset 是一个 h5py 对象")
+        
+        #     # 2. 获取第一层的 group 的 key
+        #     keys = list(dataset.keys())  # 获取第一层所有的 group 名称
+        #     print("dataset 第一层的 group 对应的 keys: ", keys)
+        # else:
+        #     print("dataset 不是一个 h5py 对象")
+        #     print(dataset)
 
         prev_success_rate = -1.0
         best_state_dict = self.policy.state_dict()  # currently save the best model
@@ -182,7 +199,7 @@ class Sequential(nn.Module, metaclass=AlgoMeta):
                 f"[info] Epoch: {epoch:3d} | train loss: {training_loss:5.2f} | time: {(t1-t0)/60:4.2f}"
             )
 
-            if epoch % self.cfg.eval.eval_every == 0:  # evaluate BC loss
+            if self.cfg.eval.eval and epoch % self.cfg.eval.eval_every == 0:  # evaluate BC loss
                 # every eval_every epoch, we evaluate the agent on the current task,
                 # then we pick the best performant agent on the current task as
                 # if it stops learning after that specific epoch. So the stopping
@@ -224,6 +241,12 @@ class Sequential(nn.Module, metaclass=AlgoMeta):
                     + f"| succ. AoC {tmp_successes.sum()/cumulated_counter:4.2f} | time: {(t1-t0)/60:4.2f}",
                     flush=True,
                 )
+            else:
+                if epoch % self.cfg.eval.eval_every == 0:
+                    model_checkpoint_name = os.path.join(self.experiment_dir, f"task{task_id}_model_epoch{epoch}.pth")
+                    torch_save_model(self.policy, model_checkpoint_name, cfg=self.cfg)
+                    cumulated_counter += 1.0
+                    losses.append(training_loss)
 
             if self.scheduler is not None and epoch > 0:
                 self.scheduler.step()
@@ -247,11 +270,13 @@ class Sequential(nn.Module, metaclass=AlgoMeta):
             },
             auc_checkpoint_name,
         )
-
-        # pretend that the agent stops learning once it reaches the peak performance
-        losses[idx_at_best_succ:] = losses[idx_at_best_succ]
-        successes[idx_at_best_succ:] = successes[idx_at_best_succ]
-        return successes.sum() / cumulated_counter, losses.sum() / cumulated_counter
+        if self.cfg.eval.eval:
+            # pretend that the agent stops learning once it reaches the peak performance
+            losses[idx_at_best_succ:] = losses[idx_at_best_succ]
+            successes[idx_at_best_succ:] = successes[idx_at_best_succ]
+            return successes.sum() / cumulated_counter, losses.sum() / cumulated_counter
+        else:
+            return -1, losses.sum() / cumulated_counter
 
     def reset(self):
         self.policy.reset()

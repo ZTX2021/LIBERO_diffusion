@@ -12,6 +12,7 @@ import time
 import torch
 import wandb
 import yaml
+import multiprocessing
 from easydict import EasyDict
 from hydra.utils import get_original_cwd, to_absolute_path
 from omegaconf import DictConfig, OmegaConf
@@ -115,6 +116,8 @@ def parse_args():
 
 
 def main():
+    if multiprocessing.get_start_method(allow_none=True) != "spawn":  
+        multiprocessing.set_start_method("spawn", force=True)
     args = parse_args()
     # e.g., experiments/LIBERO_SPATIAL/Multitask/BCRNNPolicy_seed100/
 
@@ -139,22 +142,20 @@ def main():
     if experiment_id == 0:
         print(f"[error] cannot find the checkpoint under {experiment_dir}")
         sys.exit(0)
+    
+    experiment_id = 39
 
     run_folder = os.path.join(experiment_dir, f"run_{experiment_id:03d}")
-    try:
-        if args.algo == "multitask":
-            model_path = os.path.join(run_folder, f"multitask_model_ep{args.ep}.pth")
-            sd, cfg, previous_mask = torch_load_model(
-                model_path, map_location=args.device_id
-            )
-        else:
-            model_path = os.path.join(run_folder, f"task{args.load_task}_model.pth")
-            sd, cfg, previous_mask = torch_load_model(
-                model_path, map_location=args.device_id
-            )
-    except:
-        print(f"[error] cannot find the checkpoint at {str(model_path)}")
-        sys.exit(0)
+    if args.algo == "multitask":
+        model_path = os.path.join(run_folder, f"multitask_model_ep{args.ep}.pth")
+        sd, cfg, previous_mask = torch_load_model(
+            model_path, map_location=args.device_id
+        )
+    else:
+        model_path = os.path.join(run_folder, f"task{args.load_task}_model_epoch50.pth")
+        sd, cfg, previous_mask = torch_load_model(
+            model_path, map_location=args.device_id
+        )
 
     cfg.folder = get_libero_path("datasets")
     cfg.bddl_folder = get_libero_path("bddl_files")
@@ -251,6 +252,8 @@ def main():
         init_states_path = os.path.join(
             cfg.init_states_folder, task.problem_folder, task.init_states_file
         )
+
+
         init_states = torch.load(init_states_path)
         indices = np.arange(env_num) % init_states.shape[0]
         init_states_ = init_states[indices]
@@ -293,7 +296,7 @@ def main():
         }
 
         os.system(f"mkdir -p {args.save_dir}")
-        torch.save(eval_stats, save_folder)
+        # torch.save(eval_stats, save_folder)
     print(
         f"[info] finish for ckpt at {run_folder} in {t.get_elapsed_time()} sec for rollouts"
     )

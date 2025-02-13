@@ -8,12 +8,15 @@ results
 outputs/*
 /MUJOCO_LOG.TXT
 wandb
-experiments/
-experiments_saved/
+*/experiments/*
+/experiments_saved/
+/experiments*
 clip/
 gpt/
 bert/
 logs/
+outputs
+*.symlink
 
 *.mp4
 libero.egg-info/

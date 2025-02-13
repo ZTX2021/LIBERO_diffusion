@@ -107,7 +107,7 @@ def evaluate_one_task_success(
         init_states = torch.load(init_states_path)
         num_success = 0
         for i in range(eval_loop_num):
-            env.reset()
+            env.reset(no_return = True)
             indices = np.arange(i * env_num, (i + 1) * env_num) % init_states.shape[0]
             init_states_ = init_states[indices]
 

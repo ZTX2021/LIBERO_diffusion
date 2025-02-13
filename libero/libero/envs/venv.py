@@ -10,7 +10,12 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from multiprocessing import Array, Pipe, connection
 from multiprocessing.context import Process
+import multiprocessing
 from typing import Any, Callable, List, Optional, Tuple, Union
+
+
+# if multiprocessing.get_start_method(allow_none=True) != "forkserver":  
+#     multiprocessing.set_start_method("forkserver", force=True)
 
 
 gym_old_venv_step_type = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -690,6 +695,7 @@ class BaseVectorEnv(object):
     def reset(
         self,
         id: Optional[Union[int, List[int], np.ndarray]] = None,
+        no_return = False,
         **kwargs: Any,
     ) -> Union[np.ndarray, Tuple[np.ndarray, Union[dict, List[dict]]]]:
         """Reset the state of some envs and return initial observations.
@@ -706,6 +712,8 @@ class BaseVectorEnv(object):
         # send(None) == reset() in worker
         for i in id:
             self.workers[i].send(None, **kwargs)
+        if(no_return == True):
+            return
         ret_list = [self.workers[i].recv() for i in id]
 
         reset_returns_info = (

@@ -1,4 +1,5 @@
 import os
+import argparse
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
@@ -33,9 +34,13 @@ from libero.lifelong.utils import (
     get_task_embs,
 )
 
+TRAINED_ID = -1
+
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(hydra_cfg):
+
+
     # preprocessing
     yaml_config = OmegaConf.to_yaml(hydra_cfg)
     cfg = EasyDict(yaml.safe_load(yaml_config))
@@ -93,9 +98,13 @@ def main(hydra_cfg):
 
     gsz = cfg.data.task_group_size
     if gsz == 1:  # each manipulation task is its own lifelong learning task
+        # for (ds, emb) in zip(manip_datasets, task_embs):
+        #     print('\n\n', ds, '\n')
+        #     print(type(emb), '\n\n')
         datasets = [
             SequenceVLDataset(ds, emb) for (ds, emb) in zip(manip_datasets, task_embs)
         ]
+        # print(datasets[0].sequence_dataset)
         n_demos = [data.n_demos for data in datasets]
         n_sequences = [data.total_num_sequences for data in datasets]
     else:  # group gsz manipulation tasks into a lifelong task, currently not used
@@ -128,7 +137,7 @@ def main(hydra_cfg):
     print("=======================================================================\n")
 
     # prepare experiment and update the config
-    create_experiment_dir(cfg)
+    create_experiment_dir(cfg, TRAINED_ID)
     cfg.shape_meta = shape_meta
 
     if cfg.use_wandb:
@@ -157,9 +166,28 @@ def main(hydra_cfg):
 
     # define lifelong algorithm
     algo = safe_device(get_algo_class(cfg.lifelong.algo)(n_tasks, cfg), cfg.device)
+    if cfg.pretrain_model_path != "" and TRAINED_ID != -1:
+        print(
+                f"[error] have both pretrained model and partial trained model"
+            )
+        sys.exit(0)
     if cfg.pretrain_model_path != "":  # load a pretrained model if there is any
         try:
             algo.policy.load_state_dict(torch_load_model(cfg.pretrain_model_path)[0])
+        except:
+            print(
+                f"[error] cannot load pretrained model from {cfg.pretrain_model_path}"
+            )
+            sys.exit(0)
+
+    begin_id = 0
+    while os.path.isfile(os.path.join(cfg.experiment_dir, f"task{begin_id}_model_epoch50.pth")):
+        begin_id += 1
+    if begin_id > 0:
+        try:
+            load_path = os.path.join(cfg.experiment_dir, f"task{begin_id - 1}_model_epoch50.pth")
+            algo.policy.load_state_dict(torch_load_model(load_path)[0])
+            print(f"[info] load partially trained model from {load_path}")
         except:
             print(
                 f"[error] cannot load pretrained model from {cfg.pretrain_model_path}"
@@ -211,7 +239,7 @@ def main(hydra_cfg):
 
             torch.save(result_summary, os.path.join(cfg.experiment_dir, f"result.pt"))
     else:
-        for i in range(n_tasks):
+        for i in range(begin_id, n_tasks):
             print(f"[info] start training on task {i}")
             algo.train()
 
@@ -258,6 +286,10 @@ def main(hydra_cfg):
                 print(("[Task %2d succ.] " + " %4.2f |" * (i + 1)) % (i, *S))
                 torch.save(
                     result_summary, os.path.join(cfg.experiment_dir, f"result.pt")
+                )
+            else:
+                print(
+                    f"[info] train time (min) {(t1-t0)/60:.1f} "
                 )
 
     print("[info] finished learning\n")

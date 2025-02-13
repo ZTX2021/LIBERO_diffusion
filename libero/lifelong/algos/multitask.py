@@ -33,9 +33,9 @@ class Multitask(Sequential):
         train_dataloader = DataLoader(
             concat_dataset,
             batch_size=self.cfg.train.batch_size,
-            num_workers=self.cfg.train.num_workers,
+            # num_workers=self.cfg.train.num_workers,
             sampler=RandomSampler(concat_dataset),
-            persistent_workers=True,
+            # persistent_workers=True,
         )
 
         prev_success_rate = -1.0
