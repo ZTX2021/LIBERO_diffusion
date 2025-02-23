@@ -160,12 +160,18 @@ def print_hdf5_structure(group, indent=0):
 
 def read_data(h5_file_path):
     import h5py
+    import numpy as np
     # 打开 HDF5 文件
     with h5py.File(h5_file_path, 'r') as file:
         # print_hdf5_structure(file)
-        with open("./model_file.txt", "w", encoding="utf-8") as output:
-            output.write(file["data"]["demo_0"].attrs["model_file"])
-        pass
+        a = file["data"]["demo_0"]["obs"]["agentview_depth"][:]
+        a = a[0]
+        print(a.shape)
+        print(np.min(a))
+        print(np.max(a))
+        # with open("./model_file.txt", "w", encoding="utf-8") as output:
+        #     output.write(file["data"]["demo_0"].attrs["model_file"])
+        # pass
 
 
 
@@ -230,8 +236,8 @@ if __name__ == '__main__':
     # check_integrity()
     # visual_insitial()
     # download_datasets()
-    visual()
-    # read_data('./libero/datasets/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5')
+    # visual()
+    read_data('/home/jiangtao/tianxing/LIBERO-master/outputs/datasets/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5')
     # get_auc()
 
 
